@@ -9,7 +9,6 @@ class ConfigManager:
     def __init__(self):
         # Инициализация переменных класса
         self.BOT_TOKEN = None
-        self.DB_SQLITE = None
         # Загрузка и валидация конфигурации
         load_dotenv(find_dotenv(filename=".env"))
         self.init_config()
@@ -17,7 +16,6 @@ class ConfigManager:
     def init_config(self):
         required_vars = [
             "BOT_TOKEN",
-            "DB_SQLITE",
         ]
         
         for var in required_vars:
