@@ -15,7 +15,7 @@ from database.models import Base
 from vars_init import config
 
 # Подключение SQLite
-engine = create_async_engine(config.DB_SQLITE)
+engine = create_async_engine(config.DB_CONN_STRING)
 
 session_maker = async_sessionmaker(
     bind = engine, class_ = AsyncSession, expire_on_commit = False
