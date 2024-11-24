@@ -45,6 +45,8 @@ async def main():
     time_now = datetime.today()
     print(f"[{str(time_now)[:19]}]: Bot started")
 
+
+
     await dp.start_polling(bot)
 
 # Запуск бота

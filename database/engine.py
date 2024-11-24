@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 # Мои модули
-from database.models import Base
+from . import models
 from vars_init import config
 
 # Подключение SQLite
@@ -23,9 +23,9 @@ session_maker = async_sessionmaker(
 
 async def create_db():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(models.Base.metadata.create_all)
 
 
 async def drop_db():
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(models.Base.metadata.drop_all)

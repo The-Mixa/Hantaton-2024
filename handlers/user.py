@@ -6,7 +6,7 @@ import logging
 # Сторонние модули
 from aiogram import F, Dispatcher, types
 from aiogram.filters import CommandStart
-import nlp
+from nlp import get_answer
 
 # Настроим логирование
 logging.basicConfig(level=logging.INFO)
