@@ -37,7 +37,6 @@ class ConfigManager:
                 value = input(f"[.env ERROR] Enter value for {var}: ")
             # Установка значения как атрибута класса
             setattr(self, var, value)        
-        print(f"[ALL VARS COLLECTED]")
 
 
 # Доступ к переменным

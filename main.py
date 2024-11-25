@@ -14,6 +14,8 @@ from middlewares.db import DataBaseSession
 from database.engine import create_db, drop_db, session_maker
 from commands import admin_commands, user_commands
 from vars_init import config
+from api.skitAPI import SkitApi
+from api.user_functions import login_user
 
 bot = Bot(
     token = config.BOT_TOKEN, parse_mode = "HTML",
@@ -30,6 +32,13 @@ async def on_startup():
         await drop_db()
     await create_db()
 
+
+    api = SkitApi()
+    await login_user(tgid=1, login='Xantaton', password='Krypay1-/')
+    await api.get_applications(tgid=1)
+
+
+
     user.register_handlers(dp)
     admin.register_handlers(dp)
 
@@ -44,8 +53,6 @@ async def main():
 
     time_now = datetime.today()
     print(f"[{str(time_now)[:19]}]: Bot started")
-
-
 
     await dp.start_polling(bot)
 

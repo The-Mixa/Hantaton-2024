@@ -12,15 +12,5 @@ from sqlalchemy.orm import (
 )
 
 
-# Столбцы таблицы, которые создаются автоматически
 class Base(DeclarativeBase):
-    created: Mapped[DateTime] = mapped_column(
-                                DateTime(timezone = True),
-                                default = func.now()
-                            )
-    
-    updated: Mapped[DateTime] = mapped_column(
-                                DateTime(timezone = True),
-                                default = func.now(),
-                                onupdate = func.now()
-                            )
+    pass
