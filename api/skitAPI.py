@@ -130,3 +130,4 @@ class SkitApi:
         return res
 
 
+api = SkitApi()
