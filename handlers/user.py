@@ -61,29 +61,69 @@ async def leave_request_handler(callback_query: types.CallbackQuery, state: FSMC
 @questionnaire_router.message(StateFilter("waiting_for_application_content"))
 async def application_content_handler(message: types.Message, state: FSMContext):
     logging.info(f"Пользователь {message.from_user.id} указал описание заявки: {message.text}")
-    # Получаем сохраненные данные из состояния
     user_data = await state.get_data()
     application_name = user_data.get("application_name")
     application_content = message.text
-    # Создаем заявку через API
-    tgid = message.from_user.id
-    try:
-        # Передаем только необходимые данные БЕЗ session!!!
-        await SkitApi.make_application(name=application_name, content=application_content, tgid=tgid)
-        await message.answer("Ваша заявка успешно создана!")
-    except Exception as e:
-        logging.error(f"Ошибка при создании заявки: {e}")
-        await message.answer("Произошла ошибка при создании заявки. Пожалуйста, попробуйте позже.")
 
-    await state.clear()
+    await state.update_data(application_name=application_name, application_content=application_content)
+
+    markup = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="Подтвердить", callback_data="confirm_application")],
+        [types.InlineKeyboardButton(text="Не подтверждать", callback_data="reject_application")]
+    ])
+
+    await message.answer(
+        f"Почти готово!\n\n"
+        f"<b>Название заявки:</b> {application_name}\n"
+        f"<b>Описание заявки:</b> {application_content}\n\n"
+        "Пожалуйста, подтвердите правильность заявки.",
+        reply_markup=markup
+    )
+
+
+@questionnaire_router.callback_query(F.data == "confirm_application")
+async def confirm_application_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    logging.info(f"Пользователь {callback_query.from_user.id} подтвердил заявку.")
+
+    user_data = await state.get_data()
+    application_name = user_data.get("application_name")
+    application_content = user_data.get("application_content")
+    tgid = callback_query.from_user.id
+
+    try:
+        await SkitApi.make_application(name=application_name, content=application_content, tgid=tgid)
+        await callback_query.answer("Заявка успешно подтверждена и отправлена!")
+        await callback_query.message.answer(
+            "Заявка отправлена!"
+        )
+        await callback_query.message.delete_reply_markup()
+    except Exception as e:
+        logging.error(f"Ошибка при отправке заявки: {e}")
+        await callback_query.answer("Произошла ошибка при отправке заявки. Попробуйте позже.")
+        await callback_query.message.delete_reply_markup()
+    finally:
+        await state.clear()
+
+
+@questionnaire_router.callback_query(F.data == "reject_application")
+async def reject_application_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    logging.info(f"Пользователь {callback_query.from_user.id} отклонил заявку.")
+    await callback_query.answer("Вы отклонили заявку. Создайте новую заявку.")
+    await callback_query.message.answer("Пожалуйста, введите название новой заявки.")
+
+    # Возвращаемся к первому состоянию для новой заявки
+    await state.set_state("waiting_for_application_name")
 
 
 @questionnaire_router.message(StateFilter("waiting_for_application_name"))
 async def application_name_handler(message: types.Message, state: FSMContext):
-    logging.info(f"Пользователь {message.from_user.id} указал название заявки: {message.text}")
+    logging.info(f"Пользователь {message.from_user.id} указал новое название заявки: {message.text}")
+
     await state.update_data(application_name=message.text)
+
     await message.answer("Теперь, пожалуйста, введите описание вашей заявки.")
     await state.set_state("waiting_for_application_content")
+
 
 
 @questionnaire_router.message(StateFilter(LoginForm.waiting_for_password))
