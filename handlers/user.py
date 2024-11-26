@@ -6,7 +6,7 @@ from aiogram.filters import CommandStart
 from aiogram.filters.state import StateFilter
 from aiogram import Router
 from api.skitAPI import SkitApi
-from api.user_functions import login_user, add_user
+from api.user_functions import login_user, add_user, is_login
 import nlp
 
 questionnaire_router = Router()
@@ -23,29 +23,44 @@ class LoginForm(StatesGroup):
 @questionnaire_router.message(CommandStart())
 async def start_handler(message: types.Message):
     logging.info(f"start_handler called for user {message.from_user.id}")
-    await message.answer(
-        "<i>Здравствуйте!</i>\n\n"
-        "Я <b>СКИТ help бот</b>, опишите свою проблему, и я постараюсь помочь.\n\n"
-        "▫️Напишите подробно, чтобы я мог быстрее разобраться в вашем вопросе."
-    )
+    # Проверка, авторизован ли пользователь
+    tgid = message.from_user.id
+    if await is_login(tgid):
+        await message.answer(
+            "<i>Здравствуйте!</i>\n\n"
+            "Вы уже авторизованы. Можете оставить заявку или задать вопрос."
+        )
+    else:
+        await message.answer(
+            "<i>Здравствуйте!</i>\n\n"
+            "Я <b>СКИТ help бот</b>, опишите свою проблему, и я постараюсь помочь.\n\n"
+            "▫️Напишите подробно, чтобы я мог быстрее разобраться в вашем вопросе."
+        )
 
 
 # Хендлер для /login
 @questionnaire_router.message(CommandStart("login"))
 async def login_command_handler(message: types.Message, state: FSMContext):
     logging.info(f"login_command_handler called for user {message.from_user.id}")
-
+    tgid = message.from_user.id
+    if await is_login(tgid):
+        await message.answer(
+            "Вы уже авторизованы. Можете оставить заявку или задать вопрос."
+        )
+        return
     # Запускаем процесс авторизации
     await message.answer("Пожалуйста, введите ваш логин.")
     await state.set_state(LoginForm.waiting_for_login)
 
 
-# Хендлер для ответа на вопрос пользователя (не касается логина/пароля)
 @questionnaire_router.message(StateFilter(LoginForm.waiting_for_login))
 async def login_handler(message: types.Message, state: FSMContext):
     logging.info(f"login_handler called with login: {message.text}")
+    tgid = message.from_user.id
+    if await is_login(tgid):
+        await message.answer("Вы уже авторизованы. Можете оставить заявку или задать вопрос.")
+        return
     await state.update_data(login=message.text)
-
     await message.answer("Теперь введите ваш пароль.")
     await state.set_state(LoginForm.waiting_for_password)
 
@@ -125,13 +140,11 @@ async def application_name_handler(message: types.Message, state: FSMContext):
     await state.set_state("waiting_for_application_content")
 
 
-
 @questionnaire_router.message(StateFilter(LoginForm.waiting_for_password))
 async def password_handler(message: types.Message, state: FSMContext):
     logging.info(f"password_handler вызван с паролем: {message.text}")
     user_data = await state.get_data()
     id_user, login, password = message.from_user.id, user_data.get('login'), message.text
-    print(id_user, login, password)
 
     add_user_status = await add_user(tgid=id_user)
     if add_user_status:
@@ -182,20 +195,23 @@ async def answer_handler(message: types.Message):
         await message.answer("Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.")
 
 
-# Хендлер для кнопки "Не удовлетворяет"
 @questionnaire_router.callback_query(F.data)
 async def answer_no_handler(callback_query: types.CallbackQuery, state: FSMContext):
-    if "answer_no" in callback_query.data:
+    tgid = callback_query.from_user.id
+    if "answer_yes" in callback_query.data:
+        await callback_query.message.answer("Отлично! Был рад помочь!")
+    # Проверяем, авторизован ли пользователь
+    elif await is_login(tgid):
+        logging.info(f"User {tgid} clicked 'Не удовлетворяет' and is logged in.")
+        await callback_query.answer("Давайте создадим заявку.")
+        await callback_query.message.answer("Пожалуйста, введите название вашей заявки.")
+        await state.set_state("waiting_for_application_name")
+    else:
+        # Если не авторизован, запрашиваем логин
+        logging.info(f"User {tgid} clicked 'Не удовлетворяет' but is not logged in.")
         await callback_query.answer("Давайте авторизуемся, чтобы перейти к оформлению заявки.")
         await state.set_state(LoginForm.waiting_for_login)
         await callback_query.message.answer("Пожалуйста, введите ваш логин.")
-    if "answer_yes" in callback_query.data:
-        logging.info(f"User {callback_query.from_user.id} clicked 'Удовлетворяет'")
-        await callback_query.answer("Спасибо, что подтвердили, что ответ вам подходит!")
-        await callback_query.message.answer(
-            "Рад, что смог помочь! Если у вас возникнут другие вопросы, не стесняйтесь обращаться."
-        )
-        await callback_query.message.delete_reply_markup()
 
 
 def register_handlers(dp: Dispatcher):
