@@ -32,13 +32,6 @@ async def on_startup():
         await drop_db()
     await create_db()
 
-
-    api = SkitApi()
-    await login_user(tgid=1, login='Xantaton', password='Krypay1-/')
-    await api.get_applications(tgid=1)
-
-
-
     user.register_handlers(dp)
     admin.register_handlers(dp)
 
