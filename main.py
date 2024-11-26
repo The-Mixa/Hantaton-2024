@@ -14,7 +14,7 @@ from middlewares.db import DataBaseSession
 from database.engine import create_db, drop_db, session_maker
 from commands import admin_commands, user_commands
 from vars_init import config
-from api.skitAPI import SkitApi
+from api.skitAPI import api
 from api.user_functions import login_user
 
 bot = Bot(
