@@ -50,6 +50,42 @@ async def login_handler(message: types.Message, state: FSMContext):
     await state.set_state(LoginForm.waiting_for_password)
 
 
+# Хендлер для кнопки "Оставить заявку"
+@questionnaire_router.callback_query(F.data == "leave_request")
+async def leave_request_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    logging.info(f"Пользователь {callback_query.from_user.id} нажал 'Оставить заявку'")
+    await callback_query.message.answer("Пожалуйста, введите название вашей заявки.")
+    await state.set_state("waiting_for_application_name")
+
+
+@questionnaire_router.message(StateFilter("waiting_for_application_content"))
+async def application_content_handler(message: types.Message, state: FSMContext):
+    logging.info(f"Пользователь {message.from_user.id} указал описание заявки: {message.text}")
+    # Получаем сохраненные данные из состояния
+    user_data = await state.get_data()
+    application_name = user_data.get("application_name")
+    application_content = message.text
+    # Создаем заявку через API
+    tgid = message.from_user.id
+    try:
+        # Передаем только необходимые данные БЕЗ session!!!
+        await SkitApi.make_application(name=application_name, content=application_content, tgid=tgid)
+        await message.answer("Ваша заявка успешно создана!")
+    except Exception as e:
+        logging.error(f"Ошибка при создании заявки: {e}")
+        await message.answer("Произошла ошибка при создании заявки. Пожалуйста, попробуйте позже.")
+
+    await state.clear()
+
+
+@questionnaire_router.message(StateFilter("waiting_for_application_name"))
+async def application_name_handler(message: types.Message, state: FSMContext):
+    logging.info(f"Пользователь {message.from_user.id} указал название заявки: {message.text}")
+    await state.update_data(application_name=message.text)
+    await message.answer("Теперь, пожалуйста, введите описание вашей заявки.")
+    await state.set_state("waiting_for_application_content")
+
+
 @questionnaire_router.message(StateFilter(LoginForm.waiting_for_password))
 async def password_handler(message: types.Message, state: FSMContext):
     logging.info(f"password_handler вызван с паролем: {message.text}")
@@ -65,7 +101,10 @@ async def password_handler(message: types.Message, state: FSMContext):
     is_valid = await login_user(tgid=id_user, login=login, password=password)
     try:
         if is_valid:
-            await message.answer("Вы успешно авторизовались!")
+            # Отправляем инлайн-кнопку "Оставить заявку" после успешной авторизации
+            markup = types.InlineKeyboardMarkup(
+                inline_keyboard=[[types.InlineKeyboardButton(text="Оставить заявку", callback_data="leave_request")]])
+            await message.answer("Вы успешно авторизовались! Теперь вы можете оставить заявку.", reply_markup=markup)
             await state.clear()
         else:
             await message.answer("Неверный логин или пароль. Попробуйте снова.")
