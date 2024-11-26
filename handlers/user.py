@@ -5,6 +5,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import CommandStart
 from aiogram.filters.state import StateFilter
 from aiogram import Router
+from api.skitAPI import SkitApi
+from api.user_functions import login_user, add_user
 import nlp
 
 questionnaire_router = Router()
@@ -50,12 +52,28 @@ async def login_handler(message: types.Message, state: FSMContext):
 
 @questionnaire_router.message(StateFilter(LoginForm.waiting_for_password))
 async def password_handler(message: types.Message, state: FSMContext):
-    logging.info(f"password_handler called with password: {message.text}")
+    logging.info(f"password_handler вызван с паролем: {message.text}")
     user_data = await state.get_data()
-    login = user_data.get('login')
-    password = message.text
-    await message.answer("Вы успешно авторизовались!")
-    await state.clear()
+    id_user, login, password = message.from_user.id, user_data.get('login'), message.text
+    print(id_user, login, password)
+
+    add_user_status = await add_user(tgid=id_user)
+    if add_user_status:
+        logging.info(f"Пользователь {id_user} успешно добавлен!")
+    else:
+        logging.info(f"Пользователь {id_user} уже добавлен!")
+    is_valid = await login_user(tgid=id_user, login=login, password=password)
+    try:
+        if is_valid:
+            await message.answer("Вы успешно авторизовались!")
+            await state.clear()
+        else:
+            await message.answer("Неверный логин или пароль. Попробуйте снова.")
+            await state.set_state(LoginForm.waiting_for_login)
+    except Exception as e:
+        logging.error(f"Error occurred while processing login: {e}")
+        await message.answer("Произошла ошибка при авторизации. Попробуйте позже.")
+        await state.clear()
 
 
 # Хендлер для обычных сообщений пользователя (вне процесса авторизации)
@@ -104,4 +122,3 @@ async def answer_no_handler(callback_query: types.CallbackQuery, state: FSMConte
 def register_handlers(dp: Dispatcher):
     logging.info("Registering handlers...")
     dp.include_router(questionnaire_router)  # Регистрация маршрутов
-    
