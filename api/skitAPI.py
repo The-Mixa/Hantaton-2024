@@ -4,7 +4,6 @@ import requests
 import base64
 from requests.auth import HTTPBasicAuth
 import json
-from pprint import pformat
 
 from sqlalchemy.future import select
 import asyncio
@@ -15,12 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from vars_init import config
 from middlewares.db import DataBaseSession
 from database.engine import session_maker
-from database.application import Application
+from database.application import Application, statuses
 from database.user import User
 from database.engine import connection
-
-
-
 
 
 def string_to_base64(input_string):
@@ -30,6 +26,15 @@ def string_to_base64(input_string):
     
     return base64_string
 
+
+async def application_message_format(data: dict) -> str:
+    return (f"<b>Заявка №{data['id']}</b>\n"
+           f"Имя заявки: <b>{data['name']}</b>\n"
+           f"Статус заявки: <b>{statuses.enscriptons[data['status']]}\n"
+           f"Дата создания: <b>{data['date_creation']}</b>\n\n"
+           f"Содержание заявки:\n"
+           f"{data['content']}")
+    
 
 class SkitApi:
     def __init__(self):
@@ -69,6 +74,7 @@ class SkitApi:
 
         response = requests.get(url=url, headers=headers, verify=False)
         if response.status_code == 200:
+            self.session_token = ''
             return True
         return False
     
@@ -101,7 +107,7 @@ class SkitApi:
 
     @classmethod
     @connection
-    async def get_applications(self, tgid: int, session: AsyncSession) -> list[str]:
+    async def get_applications(self, tgid: int, session: AsyncSession) -> list[(str, int)]:
         await self.make_session(tgid=tgid)
         res = []
 
@@ -120,14 +126,40 @@ class SkitApi:
             params = {
                 'expand_dropdowns': True
             }
-
-
+            
             response = requests.get(url=url, headers=headers, params=params, verify=False)
             data = response.json()
-            res += [pformat(data)]
+            res += [(data['name'], data['id'])]
 
         self.kill_session()
         return res
+    
+    @classmethod
+    @connection
+    async def get_application_by_id(self, id: int, session: AsyncSession) -> str:
+        tickets_result = await session.execute(select(Application).where(Application.id == id))
+        tickets: list[Application] = list(tickets_result.scalars())
+        if not tickets:
+            return "Заявка не найдена"
+        ticket = tickets[0]
+        await self.make_session(ticket.user_tgid)
+
+        url = config.API_URL + 'Ticket/' + str(ticket.id)
+
+        headers = {
+            'App-Token': config.API_TOKEN,
+            'Content-Type': 'application/json',
+            'Session-Token': self.session_token
+        }
+
+        params = {
+            'expand_dropdowns': True
+        }
+        
+        response = requests.get(url=url, headers=headers, params=params, verify=False)
+        data = response.json()
+
+        return await application_message_format(data)
 
 
 api = SkitApi()
