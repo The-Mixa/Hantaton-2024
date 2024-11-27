@@ -158,23 +158,7 @@ class SkitApi:
         Функция для получения всех заявок из базы данных.
         Возвращает список заявок с ID и другими деталями в виде словарей.
         """
-        # Получаем все заявки из таблицы Application
-        result = await session.execute(select(Application))
-        applications = result.scalars().all()  # Список всех заявок
-
-        # Формируем список словарей с необходимыми данными
-        app_list = [
-            {
-                'id': app.id,
-                'name': app.name,
-                'status': app.status,
-                'date_creation': app.date_creation,
-                'content': app.content,
-            }
-            for app in applications
-        ]
-
-        return app_list
+        pass
 
     @classmethod
     @connection
