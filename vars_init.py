@@ -31,7 +31,7 @@ class ConfigManager:
         ]
 
         env=Env()
-        env.read_env('/.env')
+        env.read_env('.env')
         
         for var in required_vars:
             value = env.str(var)

@@ -15,7 +15,7 @@ from .models import Base
 class User(Base):
     __tablename__ = 'users'
 
-    tgid = Column(String, primary_key=True, autoincrement=True)
+    tgid = Column(String, primary_key=True)
     is_login = Column(Boolean, default=False)
     login = Column(String, nullable=True)
     password = Column(String, nullable=True)

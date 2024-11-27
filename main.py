@@ -9,6 +9,7 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from typing import List
 import time
 
 # Созданные модули
@@ -36,11 +37,11 @@ async def applications_autoupdations(session: AsyncSession) -> None:
         await asyncio.sleep(int(config.AUTOUPDATE_TIME))
         
         users_result = await session.execute(select(User))
-        users: list[User] = list(users_result.scalars())
+        users: List[User] = list(users_result.scalars())
         
         for user in users:
             applications_result = await session.execute(select(Application).where(Application.user_tgid == user.tgid))
-            applications: list[Application] = list(applications_result.scalars())
+            applications: List[Application] = list(applications_result.scalars())
             
             for application in applications:
                 data = await api.get_application(application.id)
@@ -59,8 +60,8 @@ async def on_startup():
         await drop_db()
     await create_db()
 
-    user.register_handlers(dp)
     admin.register_handlers(dp)
+    user.register_handlers(dp)
 
 
 async def main():

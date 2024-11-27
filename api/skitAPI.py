@@ -1,5 +1,3 @@
-# skitAPI.py
-
 import requests
 import base64
 from requests.auth import HTTPBasicAuth
@@ -8,7 +6,7 @@ import json
 from sqlalchemy.future import select
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from typing import List, Tuple, Dict
 
 # мои модули
 from vars_init import config
@@ -23,18 +21,19 @@ def string_to_base64(input_string):
     bytes_input = input_string.encode('utf-8')
     base64_bytes = base64.b64encode(bytes_input)
     base64_string = base64_bytes.decode('utf-8')
-    
+
     return base64_string
 
 
 async def application_message_format(data: dict) -> str:
     return (f"<b>Заявка №{data['id']}</b>\n"
-           f"Имя заявки: <b>{data['name']}</b>\n"
-           f"Статус заявки: <b>{statuses.enscriptons[data['status']]}\n"
-           f"Дата создания: <b>{data['date_creation']}</b>\n\n"
-           f"Содержание заявки:\n"
-           f"{data['content']}")
-    
+            f"Имя заявки: <b>{data['name']}</b>\n"
+            f"Статус заявки: <b>{statuses.enscriptons[data['status']]}\n"
+            f"Дата создания: <b>{data['date_creation']}</b>\n\n"
+            f"Содержание заявки:\n"
+            f"{data['content']}")
+
+
 async def application_solution_format(data: dict) -> str:
     return (f"<b>Получен ответ на заявку №{data['id']}</b>\n"
             f"Имя заявки: <b>{data['name']}</b>\n"
@@ -42,7 +41,7 @@ async def application_solution_format(data: dict) -> str:
             f"{data['content']}\n\n"
             f"Ответ на заявку:\n"
             f"{data['ITILSolution']}")
-    
+
 
 class SkitApi:
     def __init__(self):
@@ -51,6 +50,7 @@ class SkitApi:
     @classmethod
     @connection
     async def make_session(self, tgid: str, session: AsyncSession) -> bool:
+        tgid = str(tgid)  # Приводим tgid к строке
         result = await session.execute(select(User).where(User.tgid == tgid))
         user = list(result.scalars())[0]
 
@@ -58,19 +58,19 @@ class SkitApi:
         headers = {
             'App-Token': config.API_TOKEN,
             'Content-Type': 'application/json',
-            'Authorization': f"Basic {string_to_base64(f'{user.login}:{user.password}')}"
+            'Authorization': f"Basic {string_to_base64(f'{user.login}:{user.password}')} "
         }
-        
+
         response = requests.get(url=url, headers=headers, verify=False)
         data = response.json()
         if response.status_code == 200:
             data = response.json()
             self.session_token = data['session_token']
             return True
-        
+
         print(f"Возникла ошибка при создании сессии")
         return False
-    
+
     @classmethod
     def kill_session(self) -> bool:
         url = config.API_URL + 'killSession'
@@ -85,10 +85,11 @@ class SkitApi:
             self.session_token = ''
             return True
         return False
-    
+
     @classmethod
     @connection
-    async def make_application(self, name: str, content: str, tgid: str,  session) -> None:
+    async def make_application(self, name: str, content: str, tgid: str, session) -> None:
+        tgid = str(tgid)  # Приводим tgid к строке
         url = config.API_URL + 'Ticket'
         await self.make_session(tgid=tgid)
         headers = {
@@ -115,13 +116,14 @@ class SkitApi:
 
     @classmethod
     @connection
-    async def get_applications(self, tgid: str, session: AsyncSession, archive=False) -> list[(str, int)]:
+    async def get_applications(self, tgid: str, session: AsyncSession, archive=False) -> List[Tuple[(str, int)]]:
+        tgid = str(tgid)  # Приводим tgid к строке
         await self.make_session(tgid=tgid)
         res = []
 
         result = await session.execute(select(Application).where(Application.user_tgid == tgid))
-        tickets: list[Application] = list(result.scalars())
-        
+        tickets: List[Application] = list(result.scalars())
+
         for ticket in tickets:
             if archive:
                 if ticket.status >= 5:
@@ -129,7 +131,7 @@ class SkitApi:
             else:
                 if ticket < 5:
                     continue
-            
+
             url = config.API_URL + 'Ticket/' + str(ticket.id)
 
             headers = {
@@ -141,19 +143,28 @@ class SkitApi:
             params = {
                 'expand_dropdowns': True
             }
-            
+
             response = requests.get(url=url, headers=headers, params=params, verify=False)
             data = response.json()
             res += [(data['name'], data['id'])]
 
         self.kill_session()
         return res
-    
+
+
+    @classmethod
+    async def get_all_applications(cls, session: AsyncSession) -> List[Dict]:
+        """
+        Функция для получения всех заявок из базы данных.
+        Возвращает список заявок с ID и другими деталями в виде словарей.
+        """
+        pass
+
     @classmethod
     @connection
     async def get_application(self, id: int, session: AsyncSession) -> dict:
         tickets_result = await session.execute(select(Application).where(Application.id == id))
-        tickets: list[Application] = list(tickets_result.scalars())
+        tickets: List[Application] = list(tickets_result.scalars())
         if not tickets:
             return "Заявка не найдена"
         ticket = tickets[0]
@@ -170,12 +181,12 @@ class SkitApi:
         params = {
             'expand_dropdowns': True
         }
-        
+
         response = requests.get(url=url, headers=headers, params=params, verify=False)
         data = response.json()
 
         return data
-    
+
     @classmethod
     async def get_application_by_id(self, id: int) -> str:
         data = await self.get_application(id)
