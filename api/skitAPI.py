@@ -129,7 +129,7 @@ class SkitApi:
                 if ticket.status >= 5:
                     continue
             else:
-                if ticket < 5:
+                if ticket.status < 5:
                     continue
 
             url = config.API_URL + 'Ticket/' + str(ticket.id)
