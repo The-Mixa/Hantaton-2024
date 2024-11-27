@@ -15,7 +15,7 @@ from vars_init import config
 
 # Добавление пользователя с tgid в базу данных
 @connection
-async def add_user(tgid: int, session: AsyncSession) -> bool:
+async def add_user(tgid: str, session: AsyncSession) -> bool:
     result = await session.execute(select(User).where(User.tgid == tgid))
     users = list(result.scalars())
     if users:
@@ -30,7 +30,7 @@ async def add_user(tgid: int, session: AsyncSession) -> bool:
 
 # Проверка пользователя с tgid на то, указывал ли он когда либо пароль
 @connection
-async def is_login(tgid: int, session: AsyncSession) -> bool:
+async def is_login(tgid: str, session: AsyncSession) -> bool:
     result = await session.execute(select(User).where(User.tgid == tgid))
     users = list(result.scalars())
 
@@ -41,7 +41,7 @@ async def is_login(tgid: int, session: AsyncSession) -> bool:
 
 # добавление логина и пароля в СКИТ к указанному tgid
 @connection
-async def login_user(tgid: int, login: str, password: str, session: AsyncSession) -> bool:
+async def login_user(tgid: str, login: str, password: str, session: AsyncSession) -> bool:
     result = await session.execute(select(User).where(User.tgid == tgid))
     user = list(result.scalars())[0]
     user.login = login

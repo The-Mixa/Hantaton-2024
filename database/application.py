@@ -42,7 +42,7 @@ class Application(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     created_time = Column(DateTime, default=dt.now())
     status = Column(Integer, default=statuses.CREATED)
-    user_tgid = Column(Integer, ForeignKey('users.tgid'))
+    user_tgid = Column(String, ForeignKey('users.tgid'))
 
     user = relationship('User')
 

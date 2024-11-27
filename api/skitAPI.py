@@ -50,7 +50,7 @@ class SkitApi:
 
     @classmethod
     @connection
-    async def make_session(self, tgid: int, session: AsyncSession) -> bool:
+    async def make_session(self, tgid: str, session: AsyncSession) -> bool:
         result = await session.execute(select(User).where(User.tgid == tgid))
         user = list(result.scalars())[0]
 
@@ -88,7 +88,7 @@ class SkitApi:
     
     @classmethod
     @connection
-    async def make_application(self, name: str, content: str, tgid: int,  session) -> None:
+    async def make_application(self, name: str, content: str, tgid: str,  session) -> None:
         url = config.API_URL + 'Ticket'
         await self.make_session(tgid=tgid)
         headers = {
@@ -115,7 +115,7 @@ class SkitApi:
 
     @classmethod
     @connection
-    async def get_applications(self, tgid: int, session: AsyncSession, archive=False) -> list[(str, int)]:
+    async def get_applications(self, tgid: str, session: AsyncSession, archive=False) -> list[(str, int)]:
         await self.make_session(tgid=tgid)
         res = []
 
