@@ -2,18 +2,17 @@ from aiogram import types
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram import Router
 from aiogram.filters import Command
-import logging
 from aiogram import F, Dispatcher, types
-from api.skitAPI import SkitApi
+import logging
+from api.skitAPI import SkitApi  # Предполагается, что get_all_users находится в этом файле
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters.state import StateFilter
 from middlewares.db import DataBaseSession
 
 admin_router = Router()
 
-# ID администраторов (можно загрузить из базы данных или конфигурационного файла)
-ADMIN_IDS = [7447585065, 1620952084]  # Пример, замените на реальные ID
+# ID администраторов
+ADMIN_IDS = [7447585065, 1620952084]
 
 
 # Проверка, является ли пользователь администратором
@@ -27,7 +26,8 @@ async def admin_start(message: types.Message):
     if await is_admin(message.from_user.id):
         markup = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="Просмотр всех заявок", callback_data="view_all_requests")],
-            [InlineKeyboardButton(text="Просмотр пользователей", callback_data="delete_request")],
+            [InlineKeyboardButton(text="Просмотр пользователей", callback_data="view_all_users")],
+            # Кнопка для просмотра пользователей
         ])
         logging.info("Markup prepared, sending message...")
         await message.answer("Добро пожаловать в админ-панель! Выберите действие:", reply_markup=markup)
@@ -39,16 +39,9 @@ async def admin_start(message: types.Message):
 async def view_all_requests(callback_query: types.CallbackQuery):
     if await is_admin(callback_query.from_user.id):
         try:
-
-
-
-            ########## МИШАНЯ, СЮДА ВСТАВЛЯЙ ##########
-            text = await SkitApi.get_all_applications()
-
-
-
-            # Проверка на пустоту полученных заявок
-            if text:
+            applications = await SkitApi.get_all_applications()
+            if applications:
+                text = "\n".join([f"Заявка ID: {app_id} - {app_info}" for app_id, app_info in applications])
                 markup = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="Назад", callback_data="back_to_admin_menu")]
                 ])
@@ -59,51 +52,88 @@ async def view_all_requests(callback_query: types.CallbackQuery):
             logging.error(f"Ошибка при получении заявок: {e}")
             await callback_query.message.answer("Произошла ошибка при получении заявок. Попробуйте позже.")
     else:
-        # Если пользователь не администратор
         await callback_query.message.answer("У вас нет прав для выполнения этого действия.")
 
 
-@admin_router.callback_query(F.data == "view_all_requests")
+@admin_router.callback_query(F.data == "view_all_users")
 async def view_all_users(callback_query: types.CallbackQuery):
     if await is_admin(callback_query.from_user.id):
         try:
+            # Получаем всех пользователей
+            users = await SkitApi.get_all_users()
 
-
-
-            ########## МИШАНЯ, СЮДА ВСТАВЛЯЙ ##########
-            text = await SkitApi.get_all_users()
-
-
-
-            # Проверка на пустоту полученных заявок
-            if text:
-                markup = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(text="Назад", callback_data="back_to_admin_menu")]
-                ])
-                await callback_query.message.answer(text, parse_mode="HTML", reply_markup=markup)
+            if users:
+                inline_buttons = [
+                    [InlineKeyboardButton(text=f"{user_login} (ID: {tgid})", callback_data=f"user_{tgid}")]
+                    for user_login, tgid in users
+                ]
+                inline_buttons.append([InlineKeyboardButton(text="Назад", callback_data="back_to_admin_menu")])
+                markup = InlineKeyboardMarkup(inline_keyboard=inline_buttons)
+                await callback_query.message.answer("Выберите пользователя:", reply_markup=markup)
             else:
-                await callback_query.message.answer("Нет заявок.")
+                await callback_query.message.answer("Нет пользователей.")
         except Exception as e:
-            logging.error(f"Ошибка при получении заявок: {e}")
-            await callback_query.message.answer("Произошла ошибка при получении заявок. Попробуйте позже.")
+            logging.error(f"Ошибка при получении пользователей: {e}")
+            await callback_query.message.answer("Произошла ошибка при получении пользователей. Попробуйте позже.")
     else:
-        # Если пользователь не администратор
         await callback_query.message.answer("У вас нет прав для выполнения этого действия.")
 
 
-# Хендлер для кнопки "Назад" в админ-меню
+@admin_router.callback_query(F.data.startswith("user_"))
+async def view_user_applications(callback_query: types.CallbackQuery):
+    tgid = str(callback_query.data.split("_")[1])
+    try:
+        # Получаем заявки пользователя
+        applications = await SkitApi.get_applications(str(tgid))
+
+        if applications:
+            text = "Заявки пользователя:\n"
+
+            inline_buttons = [
+                [InlineKeyboardButton(text=f"{app_name}", callback_data=f"view_application_{app_id}")]
+                for app_name, app_id in applications
+            ]
+
+            back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+            inline_buttons.append([back_button])  # Исправлено добавление кнопки в список
+
+            markup = InlineKeyboardMarkup(inline_keyboard=inline_buttons)
+
+            await callback_query.message.answer(text, reply_markup=markup)
+        else:
+            print(applications, tgid)
+            await callback_query.message.answer("У пользователя нет заявок.")
+    except Exception as e:
+        logging.error(f"Ошибка при получении заявок: {e}")
+        await callback_query.message.answer("Произошла ошибка при получении ваших заявок. Попробуйте позже.")
+
+
+@admin_router.callback_query(F.data.startswith("view_application_"))
+async def get_application_by_id(callback_query: types.CallbackQuery, state: FSMContext):
+    app_id = int(callback_query.data.split("_")[2])
+    try:
+        # Получаем информацию о заявке по ID
+        application_details = await SkitApi.get_application_by_id(app_id)
+        print(application_details)
+        back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+        markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+        await callback_query.message.answer(application_details, parse_mode="HTML", reply_markup=markup)
+    except Exception as e:
+        logging.error(f"Ошибка при получении данных заявки: {e}")
+        await callback_query.message.answer("Произошла ошибка при получении данных заявки. Попробуйте позже.")
+
+
 @admin_router.callback_query(F.data == "back_to_admin_menu")
 async def back_to_admin_menu(callback_query: types.CallbackQuery):
     if await is_admin(callback_query.from_user.id):
         markup = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="Просмотр всех заявок", callback_data="view_all_requests")],
-            [InlineKeyboardButton(text="Просмотр пользователей", callback_data="delete_request")],
+            [InlineKeyboardButton(text="Просмотр пользователей", callback_data="view_all_users")],
             [InlineKeyboardButton(text="Вернуться в меню пользователя", callback_data="back_to_main_menu")]
         ])
         await callback_query.message.answer("Вы в административной панели. Выберите действие:", reply_markup=markup)
 
 
-# Хендлер для выхода в главное меню (кнопка "Назад")
 @admin_router.callback_query(F.data == "back_to_main_menu")
 async def back_to_main_menu(callback_query: types.CallbackQuery):
     markup = InlineKeyboardMarkup(inline_keyboard=[

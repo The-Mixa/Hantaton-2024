@@ -28,7 +28,7 @@ def string_to_base64(input_string):
 async def application_message_format(data: dict) -> str:
     return (f"<b>Заявка №{data['id']}</b>\n"
             f"Имя заявки: <b>{data['name']}</b>\n"
-            f"Статус заявки: <b>{statuses.enscriptons[data['status']]}\n"
+            f"Статус заявки: <b>{statuses.enscriptons[data['status']]}</b>\n"
             f"Дата создания: <b>{data['date_creation']}</b>\n\n"
             f"Содержание заявки:\n"
             f"{data['content']}")
@@ -114,9 +114,10 @@ class SkitApi:
         await session.commit()
         self.kill_session()
 
+
     @classmethod
     @connection
-    async def get_applications(self, tgid: str, session: AsyncSession, archive=False) -> List[Tuple[(str, int)]]:
+    async def get_applications(self, tgid: str, session: AsyncSession, archive=True) -> List[Tuple[(str, int)]]:
         tgid = str(tgid)  # Приводим tgid к строке
         await self.make_session(tgid=tgid)
         res = []
@@ -132,33 +133,24 @@ class SkitApi:
                 if ticket.status < 5:
                     continue
 
+            # Отправляем запрос к внешнему API для получения информации о заявке
             url = config.API_URL + 'Ticket/' + str(ticket.id)
-
             headers = {
                 'App-Token': config.API_TOKEN,
                 'Content-Type': 'application/json',
                 'Session-Token': self.session_token
             }
 
-            params = {
-                'expand_dropdowns': True
-            }
-
-            response = requests.get(url=url, headers=headers, params=params, verify=False)
-            data = response.json()
-            res += [(data['name'], data['id'])]
+            response = requests.get(url=url, headers=headers, verify=False)
+            if response.status_code == 200:
+                data = response.json()
+                res += [(data['name'], data['id'])]
+            else:
+                print(f"API request failed for ticket ID {ticket.id} with status code {response.status_code}")
 
         self.kill_session()
         return res
 
-
-    @classmethod
-    async def get_all_applications(cls, session: AsyncSession) -> List[Dict]:
-        """
-        Функция для получения всех заявок из базы данных.
-        Возвращает список заявок с ID и другими деталями в виде словарей.
-        """
-        pass
 
     @classmethod
     @connection
@@ -191,30 +183,33 @@ class SkitApi:
     async def get_application_by_id(self, id: int) -> str:
         data = await self.get_application(id)
         return await application_message_format(data)
-    
+
+
     @classmethod
     @connection
-    async def get_all_users(self, session: AsyncSession) -> list[str]:
+    async def get_all_users(self, session: AsyncSession) -> List[Tuple[str, str]]:
+        # Выполнение запроса к базе данных для получения всех пользователей
         users_result = await session.execute(select(User))
         users: list[User] = list(users_result.scalars())
-        
-        return [user.login for user in users]
-            
+
+        # Возвращаем список кортежей (login, tgid)
+        return [(user.login, user.tgid) for user in users]
+
     @classmethod
     @connection
     async def get_all_applications(self, session: AsyncSession) -> list[(str, str)]:
         applications_result = await session.execute(select(Application))
         applications: list[Application] = list(applications_result.scalars())
-        
+
         res = []
         for application in applications:
             user_result = await session.execute(select(User).where(User.tgid == application.user_tgid))
             user: User = list(user_result.scalars())[0]
             data = await self.get_application(application.id)
-            
+
             res += [(data['name'], user.login)]
-            
+
         return res
-            
+
 
 api = SkitApi()
