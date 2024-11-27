@@ -7,6 +7,9 @@ from datetime import datetime
 import logging
 # Сторонние модули
 from aiogram import Bot, Dispatcher, types
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import time
 
 # Созданные модули
 from handlers import user, admin
@@ -14,8 +17,11 @@ from middlewares.db import DataBaseSession
 from database.engine import create_db, drop_db, session_maker
 from commands import admin_commands, user_commands
 from vars_init import config
-from api.skitAPI import api
-from api.user_functions import login_user
+from api.skitAPI import api, connection, statuses, application_solution_format
+from database.application import Application
+from database.user import User
+
+
 
 bot = Bot(
     token = config.BOT_TOKEN, parse_mode = "HTML",
@@ -23,6 +29,27 @@ bot = Bot(
 )
 
 dp = Dispatcher()
+
+@connection
+async def applications_autoupdations(session: AsyncSession) -> None:
+    while True:
+        await asyncio.sleep(int(config.AUTOUPDATE_TIME))
+        
+        users_result = await session.execute(select(User))
+        users: list[User] = list(users_result.scalars())
+        
+        for user in users:
+            applications_result = await session.execute(select(Application).where(Application.user_tgid == user.tgid))
+            applications: list[Application] = list(applications_result.scalars())
+            
+            for application in applications:
+                data = await api.get_application(application.id)
+                if data['status'] != application.status and data['status'] == statuses.DONE:
+                    bot.send_message(user.tgid, application_solution_format(data))
+                    application.status = statuses.DONE
+                    await session.commit()
+                    
+    
 
 async def on_startup():
     run_param = False  # Заменяем на True, если надо дропнуть БД
@@ -47,7 +74,8 @@ async def main():
     time_now = datetime.today()
     print(f"[{str(time_now)[:19]}]: Bot started")
 
-    await dp.start_polling(bot)
+    await asyncio.gather( dp.start_polling(bot), applications_autoupdations())
+    
 
 # Запуск бота
 if __name__ == "__main__":
@@ -56,6 +84,7 @@ if __name__ == "__main__":
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         loop.run_until_complete(main())
+        
     except KeyboardInterrupt:
         print("Bot stopped")
 

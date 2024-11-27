@@ -35,6 +35,14 @@ async def application_message_format(data: dict) -> str:
            f"Содержание заявки:\n"
            f"{data['content']}")
     
+async def application_solution_format(data: dict) -> str:
+    return (f"<b>Получен ответ на заявку №{data['id']}</b>\n"
+            f"Имя заявки: <b>{data['name']}</b>\n"
+            f"Содержание заявки:\n"
+            f"{data['content']}\n\n"
+            f"Ответ на заявку:\n"
+            f"{data['ITILSolution']}")
+    
 
 class SkitApi:
     def __init__(self):
@@ -42,7 +50,7 @@ class SkitApi:
 
     @classmethod
     @connection
-    async def make_session(self, tgid: int, session: AsyncSession):
+    async def make_session(self, tgid: int, session: AsyncSession) -> bool:
         result = await session.execute(select(User).where(User.tgid == tgid))
         user = list(result.scalars())[0]
 
@@ -64,7 +72,7 @@ class SkitApi:
         return False
     
     @classmethod
-    def kill_session(self):
+    def kill_session(self) -> bool:
         url = config.API_URL + 'killSession'
         headers = {
             'App-Token': config.API_TOKEN,
@@ -80,7 +88,7 @@ class SkitApi:
     
     @classmethod
     @connection
-    async def make_application(self, name: str, content: str, tgid: int,  session):
+    async def make_application(self, name: str, content: str, tgid: int,  session) -> None:
         url = config.API_URL + 'Ticket'
         await self.make_session(tgid=tgid)
         headers = {
@@ -107,7 +115,7 @@ class SkitApi:
 
     @classmethod
     @connection
-    async def get_applications(self, tgid: int, session: AsyncSession) -> list[(str, int)]:
+    async def get_applications(self, tgid: int, session: AsyncSession, archive=False) -> list[(str, int)]:
         await self.make_session(tgid=tgid)
         res = []
 
@@ -115,6 +123,13 @@ class SkitApi:
         tickets: list[Application] = list(result.scalars())
         
         for ticket in tickets:
+            if archive:
+                if ticket.status >= 5:
+                    continue
+            else:
+                if ticket < 5:
+                    continue
+            
             url = config.API_URL + 'Ticket/' + str(ticket.id)
 
             headers = {
@@ -136,7 +151,7 @@ class SkitApi:
     
     @classmethod
     @connection
-    async def get_application_by_id(self, id: int, session: AsyncSession) -> str:
+    async def get_application(self, id: int, session: AsyncSession) -> dict:
         tickets_result = await session.execute(select(Application).where(Application.id == id))
         tickets: list[Application] = list(tickets_result.scalars())
         if not tickets:
@@ -159,7 +174,12 @@ class SkitApi:
         response = requests.get(url=url, headers=headers, params=params, verify=False)
         data = response.json()
 
-        return await application_message_format(data)
+        return data
+    
+    @classmethod
+    async def get_application_by_id(self, id: int) -> str:
+        data = await self.get_application(id)
+        return await application_message_format(data)         
 
 
 api = SkitApi()

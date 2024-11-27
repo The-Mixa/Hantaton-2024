@@ -15,6 +15,7 @@ class ConfigManager:
         self.API_TOKEN = None
         self.API_PASSWORD = None
         self.API_LOGIN = None
+        self.AUTOUPDATE_TIME = None
         # Загрузка и валидация конфигурации
         self.init_config()
 
@@ -25,7 +26,8 @@ class ConfigManager:
             "API_URL",
             "API_TOKEN",
             "API_LOGIN",
-            "API_PASSWORD"
+            "API_PASSWORD",
+            "AUTOUPDATE_TIME"
         ]
 
         env=Env()
