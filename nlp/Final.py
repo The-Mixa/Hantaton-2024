@@ -127,7 +127,7 @@ def process_user_query(user_id, question, vectorizer, index, data):
 
 
 if __name__ == "__main__":
-    file_path = "hanthathon_changed.xlsx" 
+    file_path = "nlp/hanthathon_changed.xlsx" 
     knowledge_base = load_knowledge_base(file_path)
     tfidf_vectorizer, faiss_index = train_tfidf_classifier(knowledge_base)
 

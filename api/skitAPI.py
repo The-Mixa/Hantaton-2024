@@ -210,8 +210,9 @@ class SkitApi:
         for application in applications:
             user_result = await session.execute(select(User).where(User.tgid == application.user_tgid))
             user: User = list(user_result.scalars())[0]
+            data = await self.get_application(application.id)
             
-            res += [(application.name, user.login)]
+            res += [(data['name'], user.login)]
             
         return res
             
