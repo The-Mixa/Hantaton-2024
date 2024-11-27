@@ -54,8 +54,7 @@ async def login_command_handler(message: types.Message, state: FSMContext):
             "Вы уже авторизованы. Можете оставить заявку или задать вопрос."
         )
         return
-    # Запускаем процесс авторизации
-    await message.answer("Пожалуйста, введите ваш логин.")
+    await message.answer("Пожалуйста, введите ваш логин:")
     await state.set_state(LoginForm.waiting_for_login)
 
 
@@ -67,7 +66,10 @@ async def login_handler(message: types.Message, state: FSMContext):
         await message.answer("Вы уже авторизованы. Можете оставить заявку или задать вопрос.")
         return
     await state.update_data(login=message.text)
-    await message.answer("Теперь введите ваш пароль.")
+    back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+    markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+
+    await message.answer("Теперь введите ваш пароль:", reply_markup=markup)
     await state.set_state(LoginForm.waiting_for_password)
 
 
@@ -75,12 +77,19 @@ async def login_handler(message: types.Message, state: FSMContext):
 async def leave_request_handler(callback_query: types.CallbackQuery, state: FSMContext):
     logging.info(f"Пользователь {callback_query.from_user.id} нажал 'Оставить заявку'")
 
+    tgid = callback_query.from_user.id
+    if not await is_login(tgid):
+        await callback_query.answer("Для подачи заявки нужно авторизоваться.")
+        await callback_query.message.answer("Пожалуйста, введите ваш логин:")
+        await state.set_state(LoginForm.waiting_for_login)
+        return
+
     back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
 
     markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
 
     await state.set_state("waiting_for_application_name")
-    await callback_query.message.answer("Пожалуйста, введите название вашей заявки.", reply_markup=markup)
+    await callback_query.message.answer("Пожалуйста, введите название вашей заявки:", reply_markup=markup)
 
 
 # Хендлер для кнопки "Назад" — возвращает в главное меню
@@ -140,6 +149,9 @@ async def my_requests_handler(callback_query: types.CallbackQuery, state: FSMCon
                     for app_name, app_id in applications
                 ]
 
+                back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+                inline_buttons.append([back_button])  # Исправлено добавление кнопки в список
+
                 markup = InlineKeyboardMarkup(inline_keyboard=inline_buttons)
 
                 await callback_query.message.answer(text, reply_markup=markup)
@@ -180,7 +192,7 @@ async def confirm_application_handler(callback_query: types.CallbackQuery, state
 
     try:
         await SkitApi.make_application(name=application_name, content=application_content, tgid=tgid)
-        await callback_query.answer("Заявка успешно подтверждена и отправлена!")
+        await callback_query.answer("✅Заявка успешно подтверждена и отправлена!")
         await callback_query.message.answer(
             "Заявка отправлена!"
         )
@@ -233,17 +245,17 @@ async def password_handler(message: types.Message, state: FSMContext):
     is_valid = await login_user(tgid=id_user, login=login, password=password)
     try:
         if is_valid:
-            # Отправляем инлайн-кнопку "Оставить заявку" после успешной авторизации
             markup = types.InlineKeyboardMarkup(
-                inline_keyboard=[[types.InlineKeyboardButton(text="Оставить заявку", callback_data="leave_request")]])
+                inline_keyboard=[[types.InlineKeyboardButton(text="Оставить заявку", callback_data="leave_request")]]
+            )
             await message.answer("Вы успешно авторизовались! Теперь вы можете оставить заявку.", reply_markup=markup)
             await state.clear()
         else:
-            await message.answer("Неверный логин или пароль. Попробуйте снова.")
+            await message.answer("❗Неверный логин или пароль. Попробуйте снова.\nВведите логин:")
             await state.set_state(LoginForm.waiting_for_login)
     except Exception as e:
         logging.error(f"Error occurred while processing login: {e}")
-        await message.answer("Произошла ошибка при авторизации. Попробуйте позже.")
+        await message.answer("❌Произошла ошибка при авторизации. Попробуйте позже.")
         await state.clear()
 
 
