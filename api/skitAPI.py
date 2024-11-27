@@ -179,7 +179,30 @@ class SkitApi:
     @classmethod
     async def get_application_by_id(self, id: int) -> str:
         data = await self.get_application(id)
-        return await application_message_format(data)         
-
+        return await application_message_format(data)
+    
+    @classmethod
+    @connection
+    async def get_all_users(self, session: AsyncSession) -> list[str]:
+        users_result = await session.execute(select(User))
+        users: list[User] = list(users_result.scalars())
+        
+        return [user.login for user in users]
+            
+    @classmethod
+    @connection
+    async def get_all_applications(self, session: AsyncSession) -> list[(str, str)]:
+        applications_result = await session.execute(select(Application))
+        applications: list[Application] = list(applications_result.scalars())
+        
+        res = []
+        for application in applications:
+            user_result = await session.execute(select(User).where(User.tgid == application.user_tgid))
+            user: User = list(user_result.scalars())[0]
+            
+            res += [(application.name, user.login)]
+            
+        return res
+            
 
 api = SkitApi()
