@@ -44,6 +44,7 @@ async def start_handler(message: types.Message, state: FSMContext):
         )
 
 
+
 # Хендлер для /login
 @questionnaire_router.message(CommandStart("login"))
 async def login_command_handler(message: types.Message, state: FSMContext):
@@ -264,11 +265,12 @@ async def answer_handler(message: types.Message, state: FSMContext):
     logging.info(f"answer_handler called with message: {message.text}")
 
     tgid = message.from_user.id
-    # # Проверяем, авторизован ли пользователь
-    # if not await is_login(tgid):
-    #     # Если не авторизован, сообщаем об этом и не выполняем дальнейшие действия
-    #     await message.answer("Для того чтобы задать вопрос, необходимо авторизоваться.")
-    #     return
+    # Здесь разрешаем задавать вопросы даже неавторизованным пользователям
+    if not await is_login(tgid):
+        logging.info(f"User {tgid} is not logged in, but they can still ask questions.")
+        # Сообщаем, что пользователь не авторизован, но его вопрос будет принят
+    else:
+        logging.info(f"User {tgid} is logged in and is asking a question.")
 
     waiting_msg = await message.answer("Ожидайте ответа...\nЭто займёт примерно минуту🔍")
 
@@ -279,11 +281,10 @@ async def answer_handler(message: types.Message, state: FSMContext):
 
         answer_category, answer_text = await nlp.get_answer(tgid, question)
 
-
         # Формируем текст ответа
         formatted_answer = f"*Категория:* {answer_category}\n\n*Ответ:* {answer_text}"
 
-        markup = types.InlineKeyboardMarkup(inline_keyboard=[[
+        markup = types.InlineKeyboardMarkup(inline_keyboard=[[  # Создание кнопок для ответа
             types.InlineKeyboardButton(text="Удовлетворяет", callback_data=f"answer_yes_{message.message_id}"),
             types.InlineKeyboardButton(text="Не удовлетворяет", callback_data=f"answer_no_{message.message_id}")
         ]])
@@ -302,6 +303,7 @@ async def answer_handler(message: types.Message, state: FSMContext):
 
         logging.error(f"Error occurred while processing the request: {e}")
         await message.answer("Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.")
+
 
 
 @questionnaire_router.callback_query(F.data)
