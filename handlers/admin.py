@@ -41,7 +41,7 @@ async def view_all_requests(callback_query: types.CallbackQuery):
         try:
             applications = await SkitApi.get_all_applications()
             if applications:
-                text = "\n".join([f"Заявка ID: {app_id} - {app_info}" for app_id, app_info in applications])
+                text = "\n".join([f"Заявка: {app_id} - {app_info}" for app_id, app_info in applications])
                 markup = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(text="Назад", callback_data="back_to_admin_menu")]
                 ])

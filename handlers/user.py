@@ -259,29 +259,45 @@ async def password_handler(message: types.Message, state: FSMContext):
         await state.clear()
 
 
-# Хендлер для обычных сообщений пользователя (вне процесса авторизации)
-@questionnaire_router.message(StateFilter(None))  # Фильтрует все сообщения, не касающиеся FSM
-async def answer_handler(message: types.Message):
+@questionnaire_router.message(StateFilter(None))  # Хендлер для всех сообщений, не связанных с FSM
+async def answer_handler(message: types.Message, state: FSMContext):
     logging.info(f"answer_handler called with message: {message.text}")
-    waiting_msg = await message.answer("Ожидайте ответа...")
+
+    tgid = message.from_user.id
+    # Проверяем, авторизован ли пользователь
+    if not await is_login(tgid):
+        # Если не авторизован, сообщаем об этом и не выполняем дальнейшие действия
+        await message.answer("Для того чтобы задать вопрос, необходимо авторизоваться.")
+        return
+
+    waiting_msg = await message.answer("Ожидайте ответа...\nЭто займёт примерно минуту🔍")
 
     try:
         question = message.text
-        answer_text = nlp.get_answer(message.from_user.id, question)
+        # Получаем категорию и текст ответа
+        answer_category, answer_text = await nlp.get_answer(tgid, question)
 
-        await waiting_msg.delete()
+        await waiting_msg.delete()  # Удаляем сообщение ожидания
+
+        # Формируем текст ответа
+        formatted_answer = f"*Категория:* {answer_category}\n\n*Ответ:* {answer_text}"
 
         markup = types.InlineKeyboardMarkup(inline_keyboard=[[
             types.InlineKeyboardButton(text="Удовлетворяет", callback_data=f"answer_yes_{message.message_id}"),
             types.InlineKeyboardButton(text="Не удовлетворяет", callback_data=f"answer_no_{message.message_id}")
         ]])
 
-        logging.info(
-            f"Sending answer with inline buttons: answer_yes_{message.message_id}, answer_no_{message.message_id}")
-        await message.answer(answer_text, reply_markup=markup)
+        logging.info(f"Sending answer with inline buttons: answer_yes_{message.message_id}, answer_no_{message.message_id}")
+
+        # Отправляем ответ с кнопками
+        await message.answer(formatted_answer, reply_markup=markup, parse_mode="Markdown")
 
     except Exception as e:
-        await waiting_msg.delete()
+        try:
+            await waiting_msg.delete()
+        except Exception as delete_error:
+            logging.warning(f"Message to delete not found or already deleted: {delete_error}")
+
         logging.error(f"Error occurred while processing the request: {e}")
         await message.answer("Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.")
 
