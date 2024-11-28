@@ -267,7 +267,7 @@ async def answer_handler(message: types.Message):
 
     try:
         question = message.text
-        answer_text = nlp.get_answer(question)
+        answer_text = nlp.get_answer(message.from_user.id, question)
 
         await waiting_msg.delete()
 
