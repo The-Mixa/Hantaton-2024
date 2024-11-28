@@ -264,17 +264,19 @@ async def answer_handler(message: types.Message, state: FSMContext):
     logging.info(f"answer_handler called with message: {message.text}")
 
     tgid = message.from_user.id
-    # Проверяем, авторизован ли пользователь
-    if not await is_login(tgid):
-        # Если не авторизован, сообщаем об этом и не выполняем дальнейшие действия
-        await message.answer("Для того чтобы задать вопрос, необходимо авторизоваться.")
-        return
+    # # Проверяем, авторизован ли пользователь
+    # if not await is_login(tgid):
+    #     # Если не авторизован, сообщаем об этом и не выполняем дальнейшие действия
+    #     await message.answer("Для того чтобы задать вопрос, необходимо авторизоваться.")
+    #     return
 
     waiting_msg = await message.answer("Ожидайте ответа...\nЭто займёт примерно минуту🔍")
 
     try:
         question = message.text
         # Получаем категорию и текст ответа
+        print('asdfadsf')
+
         answer_category, answer_text = await nlp.get_answer(tgid, question)
 
 
@@ -285,11 +287,11 @@ async def answer_handler(message: types.Message, state: FSMContext):
             types.InlineKeyboardButton(text="Удовлетворяет", callback_data=f"answer_yes_{message.message_id}"),
             types.InlineKeyboardButton(text="Не удовлетворяет", callback_data=f"answer_no_{message.message_id}")
         ]])
-
+        
         logging.info(f"Sending answer with inline buttons: answer_yes_{message.message_id}, answer_no_{message.message_id}")
-
+        
         await waiting_msg.delete()  # Удаляем сообщение ожидания
-        # Отправляем ответ с кнопками
+        # Отправляем ответ с кнопками  
         await message.answer(formatted_answer, reply_markup=markup, parse_mode="Markdown")
 
     except Exception as e:

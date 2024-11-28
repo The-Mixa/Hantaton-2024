@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram import F, Dispatcher, types
 import logging
-from api.skitAPI import SkitApi  # Предполагается, что get_all_users находится в этом файле
+from api.skitAPI import api  # Предполагается, что get_all_users находится в этом файле
 from aiogram.fsm.context import FSMContext
 from aiogram.filters.state import StateFilter
 from middlewares.db import DataBaseSession
@@ -12,7 +12,7 @@ from middlewares.db import DataBaseSession
 admin_router = Router()
 
 # ID администраторов
-ADMIN_IDS = [7447585065, 1620952084]
+ADMIN_IDS = [7447585065, 1620952084, 1835880628]
 
 
 # Проверка, является ли пользователь администратором
@@ -39,7 +39,7 @@ async def admin_start(message: types.Message):
 async def view_all_requests(callback_query: types.CallbackQuery):
     if await is_admin(callback_query.from_user.id):
         try:
-            applications = await SkitApi.get_all_applications()
+            applications = await api.get_all_applications()
             if applications:
                 text = "\n".join([f"Заявка: {app_id} - {app_info}" for app_id, app_info in applications])
                 markup = InlineKeyboardMarkup(inline_keyboard=[
@@ -60,7 +60,7 @@ async def view_all_users(callback_query: types.CallbackQuery):
     if await is_admin(callback_query.from_user.id):
         try:
             # Получаем всех пользователей
-            users = await SkitApi.get_all_users()
+            users = await api.get_all_users()
 
             if users:
                 inline_buttons = [
@@ -84,7 +84,7 @@ async def view_user_applications(callback_query: types.CallbackQuery):
     tgid = str(callback_query.data.split("_")[1])
     try:
         # Получаем заявки пользователя
-        applications = await SkitApi.get_applications(str(tgid))
+        applications = await api.get_applications(str(tgid))
 
         if applications:
             text = "Заявки пользователя:\n"
@@ -113,7 +113,7 @@ async def get_application_by_id(callback_query: types.CallbackQuery, state: FSMC
     app_id = int(callback_query.data.split("_")[2])
     try:
         # Получаем информацию о заявке по ID
-        application_details = await SkitApi.get_application_by_id(app_id)
+        application_details = await api.get_application_by_id(app_id)
         print(application_details)
         back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
         markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
