@@ -267,9 +267,8 @@ async def answer_handler(message: types.Message):
 
     try:
         question = message.text
-        answer_text = nlp.get_answer(message.from_user.id, question)
+        category, answer_text = await nlp.get_answer(message.from_user.id, question)
 
-        await waiting_msg.delete()
 
         markup = types.InlineKeyboardMarkup(inline_keyboard=[[
             types.InlineKeyboardButton(text="Удовлетворяет", callback_data=f"answer_yes_{message.message_id}"),
@@ -278,6 +277,8 @@ async def answer_handler(message: types.Message):
 
         logging.info(
             f"Sending answer with inline buttons: answer_yes_{message.message_id}, answer_no_{message.message_id}")
+        
+        await waiting_msg.delete()
         await message.answer(answer_text, reply_markup=markup)
 
     except Exception as e:
