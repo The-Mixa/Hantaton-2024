@@ -34,8 +34,7 @@ dp = Dispatcher()
 @connection
 async def applications_autoupdations(session: AsyncSession) -> None:
     while True:
-        await asyncio.sleep(int(config.AUTOUPDATE_TIME))
-        
+
         users_result = await session.execute(select(User))
         users: List[User] = list(users_result.scalars())
         
@@ -45,17 +44,21 @@ async def applications_autoupdations(session: AsyncSession) -> None:
             
             for application in applications:
                 data = await api.get_application(application.id)
+                print(data['status'])
                 if data['status'] != application.status and data['status'] == statuses.DONE:
-                    bot.send_message(user.tgid, application_solution_format(data))
+                    answer = await application_solution_format(int(user.tgid), data)
+                    await bot.send_message(int(user.tgid), answer)
                     application.status = statuses.DONE
                     await session.commit()
+                    
+        await asyncio.sleep(int(config.AUTOUPDATE_TIME))
+
                     
     
 
 async def on_startup():
     run_param = False  # Заменяем на True, если надо дропнуть БД
-    logging.basicConfig(level=logging.INFO)
-
+    logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
     if run_param:
         await drop_db()
     await create_db()

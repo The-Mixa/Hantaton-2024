@@ -26,21 +26,39 @@ def string_to_base64(input_string):
 
 
 async def application_message_format(data: dict) -> str:
-    return (f"<b>Заявка №{data['id']}</b>\n"
+    answer = (f"<b>Заявка №{data['id']}</b>\n"
             f"Имя заявки: <b>{data['name']}</b>\n"
             f"Статус заявки: <b>{statuses.enscriptons[data['status']]}</b>\n"
             f"Дата создания: <b>{data['date_creation']}</b>\n\n"
             f"Содержание заявки:\n"
             f"{data['content']}")
+    
+    answer = answer.replace('&lt;br&gt;', '\n')
+    answer = answer.replace('&lt;/p&gt;', '')
+    answer = answer.replace('&lt;p&gt;', '')
+    
+    return answer
 
-
-async def application_solution_format(data: dict) -> str:
-    return (f"<b>Получен ответ на заявку №{data['id']}</b>\n"
+async def application_solution_format(tgid: int, data: dict) -> str:
+    answer = ''
+    links = data['links']
+    for link in links:
+        if link['rel'] == 'ITILSolution':
+            answer = await api.get_application_solution(tgid, link['href'])
+            break
+            
+    answer =  (f"<b>Получен ответ на заявку №{data['id']}</b>\n"
             f"Имя заявки: <b>{data['name']}</b>\n"
             f"Содержание заявки:\n"
             f"{data['content']}\n\n"
             f"Ответ на заявку:\n"
-            f"{data['ITILSolution']}")
+            f"{answer}")
+    
+    answer = answer.replace('&lt;br&gt;', '\n')
+    answer = answer.replace('&lt;/p&gt;', '')
+    answer = answer.replace('&lt;p&gt;', '')
+        
+    return answer
 
 
 class SkitApi:
@@ -210,6 +228,31 @@ class SkitApi:
             res += [(data['name'], user.login)]
 
         return res
+    
+    
+    @classmethod
+    async def get_application_solution(self, tgid: int, url: str) -> str:
+        await self.make_session(tgid=tgid)
+
+        headers = {
+            'App-Token': config.API_TOKEN,
+            'Content-Type': 'application/json',
+            'Session-Token': self.session_token
+        }
+
+        response = requests.get(url=url, headers=headers, verify=False)
+        if response.status_code == 200:
+            data = response.json()
+            if not data:
+                return 'Решение не указано'
+            print(data)
+            print(response.request.url)
+            return data[0]['content']
+        else:
+            print(f"API request failed for ticket with status code {response.status_code}")
+
+        self.kill_session()
+        return 'Решение не указано'
 
 
 api = SkitApi()
