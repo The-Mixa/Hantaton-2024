@@ -28,12 +28,12 @@ async def start_handler(message: types.Message, state: FSMContext):
     if await is_login(tgid):
         # Если пользователь авторизован, выводим меню с возможностью оставить заявку и посмотреть свои заявки
         markup = types.InlineKeyboardMarkup(inline_keyboard=[
-            [types.InlineKeyboardButton(text="Оставить заявку", callback_data="leave_request")],
+            [types.InlineKeyboardButton(text="📝Оставить заявку", callback_data="leave_request")],
             [types.InlineKeyboardButton(text="Мои заявки", callback_data="my_requests")]
         ])
         await message.answer(
             "<i>Здравствуйте!</i>\n\n"
-            "Вы уже авторизованы. Можете оставить заявку или посмотреть свои заявки.",
+            "✅Вы уже авторизованы. Можете оставить заявку или посмотреть свои заявки.",
             reply_markup=markup
         )
     else:
@@ -44,7 +44,6 @@ async def start_handler(message: types.Message, state: FSMContext):
         )
 
 
-
 # Хендлер для /login
 @questionnaire_router.message(CommandStart("login"))
 async def login_command_handler(message: types.Message, state: FSMContext):
@@ -52,10 +51,10 @@ async def login_command_handler(message: types.Message, state: FSMContext):
     tgid = message.from_user.id
     if await is_login(tgid):
         await message.answer(
-            "Вы уже авторизованы. Можете оставить заявку или задать вопрос."
+            "✅Вы уже авторизованы. Можете оставить заявку или задать вопрос."
         )
         return
-    await message.answer("Пожалуйста, введите ваш логин:")
+    await message.answer("✍️Пожалуйста, введите ваш логин:")
     await state.set_state(LoginForm.waiting_for_login)
 
 
@@ -64,13 +63,13 @@ async def login_handler(message: types.Message, state: FSMContext):
     logging.info(f"login_handler called with login: {message.text}")
     tgid = message.from_user.id
     if await is_login(tgid):
-        await message.answer("Вы уже авторизованы. Можете оставить заявку или задать вопрос.")
+        await message.answer("✅Вы уже авторизованы. Можете оставить заявку или задать вопрос.")
         return
     await state.update_data(login=message.text)
-    back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+    back_button = InlineKeyboardButton(text="🔙Вернуться в меню", callback_data="back_to_main_menu")
     markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
 
-    await message.answer("Теперь введите ваш пароль:", reply_markup=markup)
+    await message.answer("🔒Теперь введите ваш пароль:", reply_markup=markup)
     await state.set_state(LoginForm.waiting_for_password)
 
 
@@ -81,16 +80,16 @@ async def leave_request_handler(callback_query: types.CallbackQuery, state: FSMC
     tgid = callback_query.from_user.id
     if not await is_login(tgid):
         await callback_query.answer("Для подачи заявки нужно авторизоваться.")
-        await callback_query.message.answer("Пожалуйста, введите ваш логин:")
+        await callback_query.message.answer("✍️Пожалуйста, введите ваш логин:")
         await state.set_state(LoginForm.waiting_for_login)
         return
 
-    back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+    back_button = InlineKeyboardButton(text="🔙Вернуться в меню", callback_data="back_to_main_menu")
 
     markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
 
     await state.set_state("waiting_for_application_name")
-    await callback_query.message.answer("Пожалуйста, введите название вашей заявки:", reply_markup=markup)
+    await callback_query.message.answer("📝Пожалуйста, введите название вашей заявки:", reply_markup=markup)
 
 
 # Хендлер для кнопки "Назад" — возвращает в главное меню
@@ -104,7 +103,7 @@ async def back_to_main_menu_handler(callback_query: types.CallbackQuery, state: 
     await callback_query.message.delete_reply_markup()
 
     markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Оставить заявку", callback_data="leave_request")],
+        [InlineKeyboardButton(text="📝Оставить заявку", callback_data="leave_request")],
         [InlineKeyboardButton(text="Мои заявки", callback_data="my_requests")]
     ])
 
@@ -121,12 +120,12 @@ async def application_content_handler(message: types.Message, state: FSMContext)
     await state.update_data(application_name=application_name, application_content=application_content)
 
     markup = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="Подтвердить", callback_data="confirm_application")],
-        [types.InlineKeyboardButton(text="Не подтверждать", callback_data="reject_application")]
+        [types.InlineKeyboardButton(text="✅Подтвердить", callback_data="confirm_application")],
+        [types.InlineKeyboardButton(text="❌Не подтверждать", callback_data="reject_application")]
     ])
 
     await message.answer(
-        f"Почти готово!\n\n"
+        f"📌Почти готово!\n\n"
         f"<b>Название заявки:</b> {application_name}\n"
         f"<b>Описание заявки:</b> {application_content}\n\n"
         "Пожалуйста, подтвердите правильность заявки.",
@@ -143,14 +142,14 @@ async def my_requests_handler(callback_query: types.CallbackQuery, state: FSMCon
             applications = await SkitApi.get_applications(tgid)
 
             if applications:
-                text = "Ваши заявки:\n"
+                text = "📌Ваши заявки:\n"
 
                 inline_buttons = [
                     [InlineKeyboardButton(text=f"{app_name}", callback_data=f"view_application_{app_id}")]
                     for app_name, app_id in applications
                 ]
 
-                back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+                back_button = InlineKeyboardButton(text="🔙Вернуться в меню", callback_data="back_to_main_menu")
                 inline_buttons.append([back_button])  # Исправлено добавление кнопки в список
 
                 markup = InlineKeyboardMarkup(inline_keyboard=inline_buttons)
@@ -163,7 +162,7 @@ async def my_requests_handler(callback_query: types.CallbackQuery, state: FSMCon
             await callback_query.message.answer("Произошла ошибка при получении ваших заявок. Попробуйте позже.")
     else:
         await callback_query.answer("Для просмотра заявок нужно авторизоваться.")
-        await callback_query.message.answer("Пожалуйста, введите ваш логин.")
+        await callback_query.message.answer("✍️Пожалуйста, введите ваш логин.")
         await state.set_state(LoginForm.waiting_for_login)
 
 
@@ -173,12 +172,13 @@ async def get_application_by_id(callback_query: types.CallbackQuery, state: FSMC
     try:
         # Получаем информацию о заявке по ID
         application_details = await SkitApi.get_application_by_id(app_id)
-        back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+        print(application_details)
+        back_button = InlineKeyboardButton(text="🔙Вернуться в меню", callback_data="back_to_main_menu")
         markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
         await callback_query.message.answer(application_details, parse_mode="HTML", reply_markup=markup)
     except Exception as e:
         logging.error(f"Ошибка при получении данных заявки: {e}")
-        await callback_query.message.answer("Произошла ошибка при получении данных заявки. Попробуйте позже.")
+        await callback_query.message.answer("❌Произошла ошибка при получении данных заявки. Попробуйте позже.")
 
 
 @questionnaire_router.callback_query(F.data == "confirm_application")
@@ -194,12 +194,12 @@ async def confirm_application_handler(callback_query: types.CallbackQuery, state
         await SkitApi.make_application(name=application_name, content=application_content, tgid=tgid)
         await callback_query.answer("✅Заявка успешно подтверждена и отправлена!")
         await callback_query.message.answer(
-            "Заявка отправлена!"
+            "✅Заявка отправлена!"
         )
         await callback_query.message.delete_reply_markup()
     except Exception as e:
         logging.error(f"Ошибка при отправке заявки: {e}")
-        await callback_query.answer("Произошла ошибка при отправке заявки. Попробуйте позже.")
+        await callback_query.answer("❌Произошла ошибка при отправке заявки. Попробуйте позже.")
         await callback_query.message.delete_reply_markup()
     finally:
         await state.clear()
@@ -211,10 +211,10 @@ async def reject_application_handler(callback_query: types.CallbackQuery, state:
 
     await callback_query.message.delete_reply_markup()
 
-    back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+    back_button = InlineKeyboardButton(text="🔙Вернуться в меню", callback_data="back_to_main_menu")
     markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
 
-    await callback_query.message.answer("Пожалуйста, введите название новой заявки.", reply_markup=markup)
+    await callback_query.message.answer("📝Пожалуйста, введите название новой заявки.", reply_markup=markup)
     await state.set_state("waiting_for_application_name")
 
 
@@ -224,10 +224,10 @@ async def application_name_handler(message: types.Message, state: FSMContext):
 
     await state.update_data(application_name=message.text)
 
-    back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+    back_button = InlineKeyboardButton(text="🔙Вернуться в меню", callback_data="back_to_main_menu")
     markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
 
-    await message.answer("Теперь, пожалуйста, введите описание вашей заявки.", reply_markup=markup)
+    await message.answer("📝Теперь, пожалуйста, введите описание вашей заявки.", reply_markup=markup)
     await state.set_state("waiting_for_application_content")
 
 
@@ -246,12 +246,12 @@ async def password_handler(message: types.Message, state: FSMContext):
     try:
         if is_valid:
             markup = types.InlineKeyboardMarkup(
-                inline_keyboard=[[types.InlineKeyboardButton(text="Оставить заявку", callback_data="leave_request")]]
+                inline_keyboard=[[types.InlineKeyboardButton(text="📝Оставить заявку", callback_data="leave_request")]]
             )
             await message.answer("Вы успешно авторизовались! Теперь вы можете оставить заявку.", reply_markup=markup)
             await state.clear()
         else:
-            await message.answer("❗Неверный логин или пароль. Попробуйте снова.\nВведите логин:")
+            await message.answer("❗Неверный логин или пароль. Попробуйте снова.\n✍️Введите логин:")
             await state.set_state(LoginForm.waiting_for_login)
     except Exception as e:
         logging.error(f"Error occurred while processing login: {e}")
@@ -286,9 +286,10 @@ async def answer_handler(message: types.Message, state: FSMContext):
             types.InlineKeyboardButton(text="Удовлетворяет", callback_data=f"answer_yes_{message.message_id}"),
             types.InlineKeyboardButton(text="Не удовлетворяет", callback_data=f"answer_no_{message.message_id}")
         ]])
-        
-        logging.info(f"Sending answer with inline buttons: answer_yes_{message.message_id}, answer_no_{message.message_id}")
-        
+
+        logging.info(
+            f"Sending answer with inline buttons: answer_yes_{message.message_id}, answer_no_{message.message_id}")
+
         await waiting_msg.delete()  # Удаляем сообщение ожидания
         # Отправляем ответ с кнопками  
         await message.answer(formatted_answer, reply_markup=markup, parse_mode="Markdown")
@@ -303,7 +304,6 @@ async def answer_handler(message: types.Message, state: FSMContext):
         await message.answer("Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.")
 
 
-
 @questionnaire_router.callback_query(F.data)
 async def answer_no_handler(callback_query: types.CallbackQuery, state: FSMContext):
     tgid = callback_query.from_user.id
@@ -313,16 +313,16 @@ async def answer_no_handler(callback_query: types.CallbackQuery, state: FSMConte
     elif await is_login(tgid):
         logging.info(f"User {tgid} clicked 'Не удовлетворяет' and is logged in.")
         await callback_query.answer("Давайте создадим заявку.")
-        back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
+        back_button = InlineKeyboardButton(text="🔙Вернуться в меню", callback_data="back_to_main_menu")
         markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
-        await callback_query.message.answer("Пожалуйста, введите название вашей заявки.", reply_markup=markup)
+        await callback_query.message.answer("📝Пожалуйста, введите название вашей заявки.", reply_markup=markup)
         await state.set_state("waiting_for_application_name")
     else:
         # Если не авторизован, запрашиваем логин
         logging.info(f"User {tgid} clicked 'Не удовлетворяет' but is not logged in.")
         await callback_query.answer("Давайте авторизуемся, чтобы перейти к оформлению заявки.")
         await state.set_state(LoginForm.waiting_for_login)
-        await callback_query.message.answer("Пожалуйста, введите ваш логин.")
+        await callback_query.message.answer("✍️Пожалуйста, введите ваш логин.")
 
 
 def register_handlers(dp: Dispatcher):
