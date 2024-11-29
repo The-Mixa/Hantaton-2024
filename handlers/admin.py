@@ -1,5 +1,5 @@
 from aiogram import types
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, FSInputFile
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram import F, Dispatcher, types
@@ -27,6 +27,7 @@ async def admin_start(message: types.Message):
         markup = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="Просмотр всех заявок", callback_data="view_all_requests")],
             [InlineKeyboardButton(text="Просмотр пользователей", callback_data="view_all_users")],
+            [InlineKeyboardButton(text="Получить файлы лога", callback_data='get_log_file')]
             # Кнопка для просмотра пользователей
         ])
         logging.info("Markup prepared, sending message...")
@@ -34,6 +35,23 @@ async def admin_start(message: types.Message):
     else:
         await message.answer("❌У вас нет прав для доступа к админ-панели")
 
+
+@admin_router.callback_query(F.data == "get_log_file")
+async def get_log_file(callback_query: types.CallbackQuery):
+    if await is_admin(callback_query.from_user.id):
+        try:
+            file = FSInputFile('skitbot.log', 'skitbot_log.txt')
+            markup = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="Назад", callback_data="back_to_admin_menu")]
+            ])
+            await callback_query.message.reply_document(file, markup=markup, parse_mode='HTML')
+            
+        except Exception as e:
+            logging.error(f"Ошибка при получении файла лога: {e}")
+            await callback_query.message.answer("Произошла ошибка при получении файла лога. Попробуйте позже.")
+    else:
+        await callback_query.message.answer("У вас нет прав для выполнения этого действия.")
+        
 
 @admin_router.callback_query(F.data == "view_all_requests")
 async def view_all_requests(callback_query: types.CallbackQuery):

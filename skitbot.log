@@ -1,0 +1,36 @@
+00:00:42,50 faiss.loader DEBUG Environment variable FAISS_OPT_LEVEL is not set, so let's pick the instruction set according to the current CPU
+00:00:42,50 faiss.loader INFO Loading faiss with AVX2 support.
+00:00:42,66 faiss.loader INFO Successfully loaded faiss with AVX2 support.
+00:00:42,77 asyncio DEBUG Using selector: EpollSelector
+00:00:42,596 root INFO Registering admin handlers...
+00:00:42,596 root INFO Registering handlers...
+00:00:42,596 aiogram.dispatcher INFO Start polling
+00:00:42,603 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:43,44 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/initSession HTTP/11" 200 52
+00:00:43,48 aiogram.dispatcher INFO Run polling for bot @SKIThmao_bot id=7765564248 - 'СКИТ help'
+00:00:43,50 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:43,391 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/Ticket/372739?expand_dropdowns=True HTTP/11" 200 2595
+00:00:43,399 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:43,835 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/initSession HTTP/11" 200 52
+00:00:43,838 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:44,289 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/Ticket/372735?expand_dropdowns=True HTTP/11" 200 2610
+00:00:44,295 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:44,759 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/initSession HTTP/11" 200 52
+00:00:44,762 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:45,52 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/Ticket/372788?expand_dropdowns=True HTTP/11" 200 2753
+00:00:45,57 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:45,455 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/initSession HTTP/11" 200 52
+00:00:45,458 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:45,881 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/Ticket/372789?expand_dropdowns=True HTTP/11" 200 2742
+00:00:45,886 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:46,397 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/initSession HTTP/11" 200 52
+00:00:46,400 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:46,737 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/Ticket/372790?expand_dropdowns=True HTTP/11" 200 2684
+00:00:46,742 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:47,157 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/initSession HTTP/11" 200 52
+00:00:47,159 urllib3.connectionpool DEBUG Starting new HTTPS connection (1): 5.141.28.151:443
+00:00:47,569 urllib3.connectionpool DEBUG https://5.141.28.151:443 "GET /apirest.php/Ticket/372792?expand_dropdowns=True HTTP/11" 200 2744
+00:01:05,737 root INFO User ID: 1835880628
+00:01:05,737 root INFO Markup prepared, sending message...
+00:01:05,988 aiogram.event INFO Update id=232373247 is handled. Duration 251 ms by bot id=7765564248
+00:01:09,301 aiogram.event INFO Update id=232373248 is handled. Duration 104 ms by bot id=7765564248

@@ -5,8 +5,11 @@ import asyncio
 import os
 from datetime import datetime
 import logging
-logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
-
+logging.basicConfig(filename='skitbot.log',
+                    filemode='w',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 # Сторонние модули
 from aiogram import Bot, Dispatcher, types
 from sqlalchemy.ext.asyncio import AsyncSession
