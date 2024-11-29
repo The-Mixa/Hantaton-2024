@@ -5,6 +5,8 @@ import asyncio
 import os
 from datetime import datetime
 import logging
+logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
+
 # Сторонние модули
 from aiogram import Bot, Dispatcher, types
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +46,6 @@ async def applications_autoupdations(session: AsyncSession) -> None:
             
             for application in applications:
                 data = await api.get_application(application.id)
-                print(data['status'])
                 if data['status'] != application.status and data['status'] == statuses.DONE:
                     answer = await application_solution_format(int(user.tgid), data)
                     await bot.send_message(int(user.tgid), answer)
@@ -54,11 +55,9 @@ async def applications_autoupdations(session: AsyncSession) -> None:
         await asyncio.sleep(int(config.AUTOUPDATE_TIME))
 
                     
-    
 
 async def on_startup():
     run_param = False  # Заменяем на True, если надо дропнуть БД
-    logging.basicConfig(level=logging.INFO, filename="py_log.log",filemode="w")
     if run_param:
         await drop_db()
     await create_db()

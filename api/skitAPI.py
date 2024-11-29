@@ -135,7 +135,7 @@ class SkitApi:
 
     @classmethod
     @connection
-    async def get_applications(self, tgid: int, session: AsyncSession, archive=True) -> List[Tuple[(str, int)]]:
+    async def get_applications(self, tgid: int, session: AsyncSession, archive=False) -> List[Tuple[(str, int)]]:
         tgid = str(tgid)  # Приводим tgid к строке
         await self.make_session(tgid=tgid)
         res = []

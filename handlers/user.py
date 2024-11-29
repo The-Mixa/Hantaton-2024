@@ -173,7 +173,6 @@ async def get_application_by_id(callback_query: types.CallbackQuery, state: FSMC
     try:
         # Получаем информацию о заявке по ID
         application_details = await SkitApi.get_application_by_id(app_id)
-        print(application_details)
         back_button = InlineKeyboardButton(text="Вернуться в меню", callback_data="back_to_main_menu")
         markup = InlineKeyboardMarkup(inline_keyboard=[[back_button]])
         await callback_query.message.answer(application_details, parse_mode="HTML", reply_markup=markup)
@@ -277,7 +276,6 @@ async def answer_handler(message: types.Message, state: FSMContext):
     try:
         question = message.text
         # Получаем категорию и текст ответа
-        print('asdfadsf')
 
         answer_category, answer_text = await nlp.get_answer(tgid, question)
 

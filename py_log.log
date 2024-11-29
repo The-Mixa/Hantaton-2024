@@ -1,0 +1,6 @@
+INFO:faiss.loader:Loading faiss with AVX2 support.
+INFO:faiss.loader:Successfully loaded faiss with AVX2 support.
+INFO:root:Registering admin handlers...
+INFO:root:Registering handlers...
+INFO:aiogram.dispatcher:Start polling
+INFO:aiogram.dispatcher:Run polling for bot @SKIThmao_bot id=7765564248 - 'СКИТ help'
