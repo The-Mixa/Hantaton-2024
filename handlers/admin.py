@@ -45,13 +45,13 @@ async def get_log_file(callback_query: types.CallbackQuery):
                 [InlineKeyboardButton(text="Назад", callback_data="back_to_admin_menu")]
             ])
             await callback_query.message.reply_document(file, markup=markup, parse_mode='HTML')
-            
+
         except Exception as e:
             logging.error(f"Ошибка при получении файла лога: {e}")
             await callback_query.message.answer("Произошла ошибка при получении файла лога. Попробуйте позже.")
     else:
         await callback_query.message.answer("У вас нет прав для выполнения этого действия.")
-        
+
 
 @admin_router.callback_query(F.data == "view_all_requests")
 async def view_all_requests(callback_query: types.CallbackQuery):
